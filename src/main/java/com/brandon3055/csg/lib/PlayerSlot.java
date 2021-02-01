@@ -1,9 +1,10 @@
 package com.brandon3055.csg.lib;
 
-import com.brandon3055.csg.LogHelper;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Created by brandon3055 on 7/06/2016.
@@ -12,6 +13,7 @@ import net.minecraft.item.ItemStack;
  * The other two fields should be set to -1.
  */
 public class PlayerSlot {
+    private static Logger LOGGER = LogManager.getLogger();
 
     private int slot;
     private EnumInvCategory category;
@@ -42,38 +44,38 @@ public class PlayerSlot {
             return new PlayerSlot(Integer.parseInt(slot.substring(slot.indexOf(":") + 1)), EnumInvCategory.fromIndex(Integer.parseInt(slot.substring(0, slot.indexOf(":")))));
         }
         catch (Exception e) {
-            LogHelper.error("Error loading slot reference from string! - " + slot);
-            LogHelper.error("Required format \"inventory:slot\" Where inventory ether 0 (main), 1 (Armor) or 2 (Off Hand) and slot is the index in that inventory.");
+            LOGGER.error("Error loading slot reference from string! - " + slot);
+            LOGGER.error("Required format \"inventory:slot\" Where inventory ether 0 (main), 1 (Armor) or 2 (Off Hand) and slot is the index in that inventory.");
             e.printStackTrace();
             return new PlayerSlot(0, EnumInvCategory.MAIN);
         }
     }
 
-    public void setStackInSlot(EntityPlayer player, ItemStack stack) {
+    public void setStackInSlot(PlayerEntity player, ItemStack stack) {
         if (category == EnumInvCategory.ARMOR){
             if (slot < 0 || slot >= player.inventory.armorInventory.size()) {
-                LogHelper.error("PlayerSlot: Could not insert into the specified slot because the specified slot dose not exist! Slot: " + slot + ", Inventory: " + category + ", Stack: " + stack);
+                LOGGER.error("PlayerSlot: Could not insert into the specified slot because the specified slot dose not exist! Slot: " + slot + ", Inventory: " + category + ", Stack: " + stack);
                 return;
             }
             player.inventory.armorInventory.set(slot, stack);
         }
         else if (category == EnumInvCategory.MAIN){
             if (slot < 0 || slot >= player.inventory.mainInventory.size()) {
-                LogHelper.error("PlayerSlot: Could not insert into the specified slot because the specified slot dose not exist! Slot: " + slot + ", Inventory: " + category + ", Stack: " + stack);
+                LOGGER.error("PlayerSlot: Could not insert into the specified slot because the specified slot dose not exist! Slot: " + slot + ", Inventory: " + category + ", Stack: " + stack);
                 return;
             }
             player.inventory.mainInventory.set(slot, stack);
         }
         else if (category == EnumInvCategory.OFF_HAND){
             if (slot < 0 || slot >= player.inventory.offHandInventory.size()) {
-                LogHelper.error("PlayerSlot: Could not insert into the specified slot because the specified slot dose not exist! Slot: " + slot + ", Inventory: " + category + ", Stack: " + stack);
+                LOGGER.error("PlayerSlot: Could not insert into the specified slot because the specified slot dose not exist! Slot: " + slot + ", Inventory: " + category + ", Stack: " + stack);
                 return;
             }
             player.inventory.offHandInventory.set(slot, stack);
         }
     }
 
-    public ItemStack getStackInSlot(EntityPlayer player) {
+    public ItemStack getStackInSlot(PlayerEntity player) {
         if (category == EnumInvCategory.ARMOR){
             return player.inventory.armorInventory.get(slot);
         }
@@ -84,7 +86,7 @@ public class PlayerSlot {
             return player.inventory.offHandInventory.get(slot);
         }
         else {
-            LogHelper.bigError("PlayerSlot#getStackInSlot Invalid or null category! This should not be possible! [%s]... Fix your Shit!", category);
+            LOGGER.error("PlayerSlot#getStackInSlot Invalid or null category! This should not be possible! {}}...", category);
             return ItemStack.EMPTY;
         }
     }
@@ -106,7 +108,7 @@ public class PlayerSlot {
 
         public static EnumInvCategory fromIndex(int index){
             if (index > 2 || index < 0){
-                LogHelper.bigError("PlayerSlot.EnumInvCategory#fromIndex Attempt to read invalid index! [%s]", index);
+                LOGGER.error("PlayerSlot.EnumInvCategory#fromIndex Attempt to read invalid index! {}", index);
                 return indexMap[0];
             }
             return indexMap[index];

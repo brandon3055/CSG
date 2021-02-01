@@ -1,10 +1,11 @@
 package com.brandon3055.csg;
 
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedInEvent;
+
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /**
  * Created by brandon3055 on 11/11/2016.
@@ -12,25 +13,27 @@ import net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedInEvent;
 public class ModEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public void playerLogin(PlayerLoggedInEvent event) {
-        if (event.player.world.isRemote) {
+    public void playerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getPlayer().world.isRemote) {
             return;
         }
 
-        NBTTagCompound playerData = event.player.getEntityData();
-        NBTTagCompound data;
+        CompoundNBT playerData = event.getPlayer().getPersistentData();
+        CompoundNBT data;
 
-        if (!playerData.hasKey(EntityPlayer.PERSISTED_NBT_TAG)) {
-            data = new NBTTagCompound();
+        if (!playerData.contains(PlayerEntity.PERSISTED_NBT_TAG)) {
+            data = new CompoundNBT();
         }
         else {
-            data = playerData.getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG);
+            data = playerData.getCompound(PlayerEntity.PERSISTED_NBT_TAG);
         }
 
         if (!data.getBoolean("csg:receivedInventory")) {
-            DataManager.givePlayerStartGear(event.player);
-            data.setBoolean("csg:receivedInventory", true);
-            playerData.setTag(EntityPlayer.PERSISTED_NBT_TAG, data);
+            if (event.getPlayer().inventory.isEmpty()){
+                DataManager.givePlayerStartGear(event.getPlayer());
+            }
+            data.putBoolean("csg:receivedInventory", true);
+            playerData.put(PlayerEntity.PERSISTED_NBT_TAG, data);
         }
     }
 }
