@@ -40,7 +40,7 @@ public class KitsCommand {
     public static void register(CommandDispatcher<CommandSource> dispatcher) {
         dispatcher.register(
                 Commands.literal("csg_kits")
-                        .requires(cs -> cs.hasPermissionLevel(2))
+                        .requires(cs -> cs.hasPermission(2))
                         .then(Commands.literal("add")
                                 .then(Commands.argument("kit-name", StringArgumentType.string())
                                         .executes(ctx -> add(ctx, StringArgumentType.getString(ctx, "kit-name")))
@@ -49,7 +49,7 @@ public class KitsCommand {
                         .then(Commands.literal("give")
                                 .then(Commands.argument("kit-name", StringArgumentType.string())
                                         .suggests((context, builder) -> ISuggestionProvider.suggest(DataManager.kits.keySet(), builder))
-                                        .executes(ctx -> give(ctx, StringArgumentType.getString(ctx, "kit-name"), ctx.getSource().asPlayer()))
+                                        .executes(ctx -> give(ctx, StringArgumentType.getString(ctx, "kit-name"), ctx.getSource().getPlayerOrException()))
                                         .then(Commands.argument("target", EntityArgument.player())
                                                 .executes(ctx -> give(ctx, StringArgumentType.getString(ctx, "kit-name"), EntityArgument.getPlayer(ctx, "target")))
                                         )
@@ -67,25 +67,25 @@ public class KitsCommand {
     }
 
     private static int add(CommandContext<CommandSource> ctx, String name) throws CommandSyntaxException {
-        PlayerEntity player = ctx.getSource().asPlayer();
+        PlayerEntity player = ctx.getSource().getPlayerOrException();
         Map<PlayerSlot, CompoundNBT> newKit = new HashMap<>();
 
-        for (int i = 0; i < player.inventory.mainInventory.size(); i++) {
-            ItemStack stack = player.inventory.mainInventory.get(i);
+        for (int i = 0; i < player.inventory.items.size(); i++) {
+            ItemStack stack = player.inventory.items.get(i);
             if (!stack.isEmpty()) {
                 newKit.put(new PlayerSlot(i, MAIN), stack.serializeNBT());
             }
         }
 
-        for (int i = 0; i < player.inventory.armorInventory.size(); i++) {
-            ItemStack stack = player.inventory.armorInventory.get(i);
+        for (int i = 0; i < player.inventory.armor.size(); i++) {
+            ItemStack stack = player.inventory.armor.get(i);
             if (!stack.isEmpty()) {
                 newKit.put(new PlayerSlot(i, ARMOR), stack.serializeNBT());
             }
         }
 
-        for (int i = 0; i < player.inventory.offHandInventory.size(); i++) {
-            ItemStack stack = player.inventory.offHandInventory.get(i);
+        for (int i = 0; i < player.inventory.offhand.size(); i++) {
+            ItemStack stack = player.inventory.offhand.get(i);
             if (!stack.isEmpty()) {
                 newKit.put(new PlayerSlot(i, OFF_HAND), stack.serializeNBT());
             }
@@ -101,7 +101,7 @@ public class KitsCommand {
             e.printStackTrace();
             throw new CommandException(new StringTextComponent(e.getMessage() + " [See console for stacktrace]"));
         }
-        ctx.getSource().sendFeedback(new StringTextComponent("Your current inventory has been saved to kit " + name).mergeStyle(TextFormatting.GREEN), false);
+        ctx.getSource().sendSuccess(new StringTextComponent("Your current inventory has been saved to kit " + name).withStyle(TextFormatting.GREEN), false);
 
         return 0;
     }
@@ -129,15 +129,15 @@ public class KitsCommand {
             e.printStackTrace();
             throw new CommandException(new StringTextComponent(e.getMessage() + " [See console for stacktrace]"));
         }
-        ctx.getSource().sendFeedback(new StringTextComponent("Kit removed successfully!").mergeStyle(TextFormatting.GREEN), false);
+        ctx.getSource().sendSuccess(new StringTextComponent("Kit removed successfully!").withStyle(TextFormatting.GREEN), false);
         return 0;
     }
 
 
     private static int list(CommandContext<CommandSource> ctx) throws CommandSyntaxException {
-        ctx.getSource().asPlayer().sendMessage(new StringTextComponent("### Kits ###").mergeStyle(TextFormatting.GOLD), Util.DUMMY_UUID);
+        ctx.getSource().getPlayerOrException().sendMessage(new StringTextComponent("### Kits ###").withStyle(TextFormatting.GOLD), Util.NIL_UUID);
         for (String name : DataManager.kits.keySet()) {
-            ctx.getSource().asPlayer().sendMessage(new StringTextComponent(name).mergeStyle(TextFormatting.GREEN), Util.DUMMY_UUID);
+            ctx.getSource().getPlayerOrException().sendMessage(new StringTextComponent(name).withStyle(TextFormatting.GREEN), Util.NIL_UUID);
         }
         return 0;
     }

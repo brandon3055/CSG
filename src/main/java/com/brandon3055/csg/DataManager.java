@@ -1,12 +1,15 @@
 package com.brandon3055.csg;
 
 import com.brandon3055.csg.lib.PlayerSlot;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonWriter;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
@@ -25,9 +28,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by brandon3055 on 16/11/2016.
@@ -38,6 +39,7 @@ public class DataManager {
     private static Path configFile;
     public static Map<PlayerSlot, CompoundNBT> spawnInventory = null;
     public static Map<String, Map<PlayerSlot, CompoundNBT>> kits = new LinkedHashMap<>();
+    public static List<String> wipeBlacklist = new ArrayList<>();
 
     //region Init,Save,Load
 
@@ -80,6 +82,10 @@ public class DataManager {
             obj.add("kits", kitsObj);
         }
 
+        JsonArray blacklist = new JsonArray();
+        wipeBlacklist.forEach(blacklist::add);
+        obj.add("wipeBlacklist", blacklist);
+
         JsonWriter writer = new JsonWriter(new FileWriter(configFile.toFile()));
         writer.setIndent("  ");
         Streams.write(obj, writer);
@@ -113,7 +119,7 @@ public class DataManager {
             JsonObject inv = obj.get("inventory").getAsJsonObject();
             for (Map.Entry<String, JsonElement> entry : inv.entrySet()) {
                 PlayerSlot slot = PlayerSlot.fromString(entry.getKey());
-                CompoundNBT stack = JsonToNBT.getTagFromJson(entry.getValue().getAsJsonPrimitive().getAsString());
+                CompoundNBT stack = JsonToNBT.parseTag(entry.getValue().getAsJsonPrimitive().getAsString());
                 spawnInventory.put(slot, stack);
             }
             LOGGER.info("Loaded " + spawnInventory.size() + " starting items.");
@@ -128,11 +134,16 @@ public class DataManager {
                 Map<PlayerSlot, CompoundNBT> kitMap = DataManager.kits.computeIfAbsent(name, s -> new HashMap<>());
                 for (Map.Entry<String, JsonElement> kitEntry : items.entrySet()) {
                     PlayerSlot slot = PlayerSlot.fromString(kitEntry.getKey());
-                    CompoundNBT stack = JsonToNBT.getTagFromJson(kitEntry.getValue().getAsJsonPrimitive().getAsString());
+                    CompoundNBT stack = JsonToNBT.parseTag(kitEntry.getValue().getAsJsonPrimitive().getAsString());
                     kitMap.put(slot, stack);
                 }
                 LOGGER.info("Loaded " + kitMap.size() + " items for kit " + name);
             }
+        }
+
+        if (obj.has("wipeBlacklist") && obj.get("wipeBlacklist").isJsonArray()) {
+            wipeBlacklist.clear();
+            obj.get("wipeBlacklist").getAsJsonArray().forEach(e -> wipeBlacklist.add(e.getAsString()));
         }
     }
 
@@ -140,30 +151,50 @@ public class DataManager {
 
     public static void givePlayerStartGear(PlayerEntity player) {
         if (spawnInventory == null) {
-            player.sendMessage(new StringTextComponent("Custom Starting Gear has not been configured!").mergeStyle(TextFormatting.DARK_RED), Util.DUMMY_UUID);
-            player.sendMessage(new StringTextComponent("If you are an operator use /csg_config to get more info."), Util.DUMMY_UUID);
+            player.sendMessage(new StringTextComponent("Custom Starting Gear has not been configured!").withStyle(TextFormatting.DARK_RED), Util.NIL_UUID);
+            player.sendMessage(new StringTextComponent("If you are an operator use /csg_config to get more info."), Util.NIL_UUID);
             return;
         }
 
-        player.inventory.clear();
+        if (wipeBlacklist.isEmpty()) {
+            player.inventory.clearContent();
+        }
+        else {
+            for (int i = 0; i < player.inventory.getContainerSize(); i++) {
+                ItemStack stack = player.inventory.getItem(i);
+                if (!stack.isEmpty() && !wipeBlacklist.contains(stack.getItem().getRegistryName().getNamespace()) && !wipeBlacklist.contains(stack.getItem().getRegistryName().toString())) {
+                    player.inventory.setItem(i, ItemStack.EMPTY);
+                }
+            }
+        }
 
         for (PlayerSlot slot : spawnInventory.keySet()) {
-            ItemStack stack = ItemStack.read(spawnInventory.get(slot));
-            slot.setStackInSlot(player, stack);
+            ItemStack stack = ItemStack.of(spawnInventory.get(slot));
+            if (slot.getStackInSlot(player).isEmpty()){
+                slot.setStackInSlot(player, stack);
+            }else {
+                ItemEntity entity = EntityType.ITEM.create(player.level);
+                if (entity != null && !player.level.isClientSide) {
+                    entity.setItem(stack);
+                    entity.setNoPickUpDelay();
+                    entity.setPos(player.getX(), player.getY(), player.getZ());
+                    player.level.addFreshEntity(entity);
+                }
+            }
         }
     }
 
     public static void givePlayerKit(PlayerEntity player, String kit) {
         if (!kits.containsKey(kit)) {
-            player.sendMessage(new StringTextComponent("The requested kit \"" + kit + "\" does not exist!").mergeStyle(TextFormatting.DARK_RED), Util.DUMMY_UUID);
+            player.sendMessage(new StringTextComponent("The requested kit \"" + kit + "\" does not exist!").withStyle(TextFormatting.DARK_RED), Util.NIL_UUID);
             return;
         }
 
         Map<PlayerSlot, CompoundNBT> kitItems = kits.get(kit);
-        player.inventory.clear();
+        player.inventory.clearContent();
 
         for (PlayerSlot slot : kitItems.keySet()) {
-            ItemStack stack = ItemStack.read(kitItems.get(slot));
+            ItemStack stack = ItemStack.of(kitItems.get(slot));
             slot.setStackInSlot(player, stack);
         }
     }

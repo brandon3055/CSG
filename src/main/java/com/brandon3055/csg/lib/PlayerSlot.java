@@ -53,37 +53,37 @@ public class PlayerSlot {
 
     public void setStackInSlot(PlayerEntity player, ItemStack stack) {
         if (category == EnumInvCategory.ARMOR){
-            if (slot < 0 || slot >= player.inventory.armorInventory.size()) {
+            if (slot < 0 || slot >= player.inventory.armor.size()) {
                 LOGGER.error("PlayerSlot: Could not insert into the specified slot because the specified slot dose not exist! Slot: " + slot + ", Inventory: " + category + ", Stack: " + stack);
                 return;
             }
-            player.inventory.armorInventory.set(slot, stack);
+            player.inventory.armor.set(slot, stack);
         }
         else if (category == EnumInvCategory.MAIN){
-            if (slot < 0 || slot >= player.inventory.mainInventory.size()) {
+            if (slot < 0 || slot >= player.inventory.items.size()) {
                 LOGGER.error("PlayerSlot: Could not insert into the specified slot because the specified slot dose not exist! Slot: " + slot + ", Inventory: " + category + ", Stack: " + stack);
                 return;
             }
-            player.inventory.mainInventory.set(slot, stack);
+            player.inventory.items.set(slot, stack);
         }
         else if (category == EnumInvCategory.OFF_HAND){
-            if (slot < 0 || slot >= player.inventory.offHandInventory.size()) {
+            if (slot < 0 || slot >= player.inventory.offhand.size()) {
                 LOGGER.error("PlayerSlot: Could not insert into the specified slot because the specified slot dose not exist! Slot: " + slot + ", Inventory: " + category + ", Stack: " + stack);
                 return;
             }
-            player.inventory.offHandInventory.set(slot, stack);
+            player.inventory.offhand.set(slot, stack);
         }
     }
 
     public ItemStack getStackInSlot(PlayerEntity player) {
         if (category == EnumInvCategory.ARMOR){
-            return player.inventory.armorInventory.get(slot);
+            return player.inventory.armor.get(slot);
         }
         else if (category == EnumInvCategory.MAIN){
-            return player.inventory.mainInventory.get(slot);
+            return player.inventory.items.get(slot);
         }
         else if (category == EnumInvCategory.OFF_HAND){
-            return player.inventory.offHandInventory.get(slot);
+            return player.inventory.offhand.get(slot);
         }
         else {
             LOGGER.error("PlayerSlot#getStackInSlot Invalid or null category! This should not be possible! {}}...", category);

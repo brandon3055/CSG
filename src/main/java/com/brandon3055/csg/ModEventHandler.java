@@ -14,7 +14,7 @@ public class ModEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void playerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getPlayer().world.isRemote) {
+        if (event.getPlayer().level.isClientSide) {
             return;
         }
 
@@ -29,9 +29,7 @@ public class ModEventHandler {
         }
 
         if (!data.getBoolean("csg:receivedInventory")) {
-            if (event.getPlayer().inventory.isEmpty()){
-                DataManager.givePlayerStartGear(event.getPlayer());
-            }
+            DataManager.givePlayerStartGear(event.getPlayer());
             data.putBoolean("csg:receivedInventory", true);
             playerData.put(PlayerEntity.PERSISTED_NBT_TAG, data);
         }
