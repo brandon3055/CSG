@@ -1,8 +1,8 @@
 package com.brandon3055.csg;
 
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -18,20 +18,20 @@ public class ModEventHandler {
             return;
         }
 
-        CompoundNBT playerData = event.getPlayer().getPersistentData();
-        CompoundNBT data;
+        CompoundTag playerData = event.getPlayer().getPersistentData();
+        CompoundTag data;
 
-        if (!playerData.contains(PlayerEntity.PERSISTED_NBT_TAG)) {
-            data = new CompoundNBT();
+        if (!playerData.contains(Player.PERSISTED_NBT_TAG)) {
+            data = new CompoundTag();
         }
         else {
-            data = playerData.getCompound(PlayerEntity.PERSISTED_NBT_TAG);
+            data = playerData.getCompound(Player.PERSISTED_NBT_TAG);
         }
 
         if (!data.getBoolean("csg:receivedInventory")) {
             DataManager.givePlayerStartGear(event.getPlayer());
             data.putBoolean("csg:receivedInventory", true);
-            playerData.put(PlayerEntity.PERSISTED_NBT_TAG, data);
+            playerData.put(Player.PERSISTED_NBT_TAG, data);
         }
     }
 }

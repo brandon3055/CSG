@@ -6,26 +6,22 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.brigadier.suggestion.SuggestionProvider;
-import net.minecraft.advancements.Advancement;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.command.ISuggestionProvider;
-import net.minecraft.command.arguments.EntityArgument;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.Util;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.Style;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
+import net.minecraft.commands.CommandRuntimeException;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,7 +33,7 @@ import static com.brandon3055.csg.lib.PlayerSlot.EnumInvCategory.*;
 public class KitsCommand {
     private static Logger LOGGER = LogManager.getLogger();
 
-    public static void register(CommandDispatcher<CommandSource> dispatcher) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("csg_kits")
                         .requires(cs -> cs.hasPermission(2))
@@ -48,7 +44,7 @@ public class KitsCommand {
                         )
                         .then(Commands.literal("give")
                                 .then(Commands.argument("kit-name", StringArgumentType.string())
-                                        .suggests((context, builder) -> ISuggestionProvider.suggest(DataManager.kits.keySet(), builder))
+                                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(DataManager.kits.keySet(), builder))
                                         .executes(ctx -> give(ctx, StringArgumentType.getString(ctx, "kit-name"), ctx.getSource().getPlayerOrException()))
                                         .then(Commands.argument("target", EntityArgument.player())
                                                 .executes(ctx -> give(ctx, StringArgumentType.getString(ctx, "kit-name"), EntityArgument.getPlayer(ctx, "target")))
@@ -57,7 +53,7 @@ public class KitsCommand {
                         )
                         .then(Commands.literal("remove")
                                 .then(Commands.argument("kit-name", StringArgumentType.string())
-                                        .suggests((context, builder) -> ISuggestionProvider.suggest(DataManager.kits.keySet(), builder))
+                                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(DataManager.kits.keySet(), builder))
                                         .executes(ctx -> remove(ctx, StringArgumentType.getString(ctx, "kit-name")))
                                 )
                         )
@@ -66,26 +62,26 @@ public class KitsCommand {
         );
     }
 
-    private static int add(CommandContext<CommandSource> ctx, String name) throws CommandSyntaxException {
-        PlayerEntity player = ctx.getSource().getPlayerOrException();
-        Map<PlayerSlot, CompoundNBT> newKit = new HashMap<>();
+    private static int add(CommandContext<CommandSourceStack> ctx, String name) throws CommandSyntaxException {
+        Player player = ctx.getSource().getPlayerOrException();
+        Map<PlayerSlot, CompoundTag> newKit = new HashMap<>();
 
-        for (int i = 0; i < player.inventory.items.size(); i++) {
-            ItemStack stack = player.inventory.items.get(i);
+        for (int i = 0; i < player.getInventory().items.size(); i++) {
+            ItemStack stack = player.getInventory().items.get(i);
             if (!stack.isEmpty()) {
                 newKit.put(new PlayerSlot(i, MAIN), stack.serializeNBT());
             }
         }
 
-        for (int i = 0; i < player.inventory.armor.size(); i++) {
-            ItemStack stack = player.inventory.armor.get(i);
+        for (int i = 0; i < player.getInventory().armor.size(); i++) {
+            ItemStack stack = player.getInventory().armor.get(i);
             if (!stack.isEmpty()) {
                 newKit.put(new PlayerSlot(i, ARMOR), stack.serializeNBT());
             }
         }
 
-        for (int i = 0; i < player.inventory.offhand.size(); i++) {
-            ItemStack stack = player.inventory.offhand.get(i);
+        for (int i = 0; i < player.getInventory().offhand.size(); i++) {
+            ItemStack stack = player.getInventory().offhand.get(i);
             if (!stack.isEmpty()) {
                 newKit.put(new PlayerSlot(i, OFF_HAND), stack.serializeNBT());
             }
@@ -99,25 +95,25 @@ public class KitsCommand {
         catch (IOException e) {
             LOGGER.error("Something when wrong while saving inventory!");
             e.printStackTrace();
-            throw new CommandException(new StringTextComponent(e.getMessage() + " [See console for stacktrace]"));
+            throw new CommandRuntimeException(new TextComponent(e.getMessage() + " [See console for stacktrace]"));
         }
-        ctx.getSource().sendSuccess(new StringTextComponent("Your current inventory has been saved to kit " + name).withStyle(TextFormatting.GREEN), false);
+        ctx.getSource().sendSuccess(new TextComponent("Your current inventory has been saved to kit " + name).withStyle(ChatFormatting.GREEN), false);
 
         return 0;
     }
 
-    private static int give(CommandContext<CommandSource> ctx, String name, ServerPlayerEntity player) {
+    private static int give(CommandContext<CommandSourceStack> ctx, String name, ServerPlayer player) {
         if (!DataManager.kits.containsKey(name)) {
-            throw new CommandException(new StringTextComponent("The specified kit does not exist!"));
+            throw new CommandRuntimeException(new TextComponent("The specified kit does not exist!"));
         }
 
         DataManager.givePlayerKit(player, name);
         return 0;
     }
 
-    private static int remove(CommandContext<CommandSource> ctx, String name) {
+    private static int remove(CommandContext<CommandSourceStack> ctx, String name) {
         if (!DataManager.kits.containsKey(name)) {
-            throw new CommandException(new StringTextComponent("The specified kit does not exist!"));
+            throw new CommandRuntimeException(new TextComponent("The specified kit does not exist!"));
         }
 
         DataManager.kits.remove(name);
@@ -127,17 +123,17 @@ public class KitsCommand {
         catch (IOException e) {
             LOGGER.error("Something when wrong while saving inventory!");
             e.printStackTrace();
-            throw new CommandException(new StringTextComponent(e.getMessage() + " [See console for stacktrace]"));
+            throw new CommandRuntimeException(new TextComponent(e.getMessage() + " [See console for stacktrace]"));
         }
-        ctx.getSource().sendSuccess(new StringTextComponent("Kit removed successfully!").withStyle(TextFormatting.GREEN), false);
+        ctx.getSource().sendSuccess(new TextComponent("Kit removed successfully!").withStyle(ChatFormatting.GREEN), false);
         return 0;
     }
 
 
-    private static int list(CommandContext<CommandSource> ctx) throws CommandSyntaxException {
-        ctx.getSource().getPlayerOrException().sendMessage(new StringTextComponent("### Kits ###").withStyle(TextFormatting.GOLD), Util.NIL_UUID);
+    private static int list(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ctx.getSource().getPlayerOrException().sendMessage(new TextComponent("### Kits ###").withStyle(ChatFormatting.GOLD), Util.NIL_UUID);
         for (String name : DataManager.kits.keySet()) {
-            ctx.getSource().getPlayerOrException().sendMessage(new StringTextComponent(name).withStyle(TextFormatting.GREEN), Util.NIL_UUID);
+            ctx.getSource().getPlayerOrException().sendMessage(new TextComponent(name).withStyle(ChatFormatting.GREEN), Util.NIL_UUID);
         }
         return 0;
     }

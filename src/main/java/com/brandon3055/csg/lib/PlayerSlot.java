@@ -1,8 +1,8 @@
 package com.brandon3055.csg.lib;
 
 import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,39 +51,39 @@ public class PlayerSlot {
         }
     }
 
-    public void setStackInSlot(PlayerEntity player, ItemStack stack) {
+    public void setStackInSlot(Player player, ItemStack stack) {
         if (category == EnumInvCategory.ARMOR){
-            if (slot < 0 || slot >= player.inventory.armor.size()) {
+            if (slot < 0 || slot >= player.getInventory().armor.size()) {
                 LOGGER.error("PlayerSlot: Could not insert into the specified slot because the specified slot dose not exist! Slot: " + slot + ", Inventory: " + category + ", Stack: " + stack);
                 return;
             }
-            player.inventory.armor.set(slot, stack);
+            player.getInventory().armor.set(slot, stack);
         }
         else if (category == EnumInvCategory.MAIN){
-            if (slot < 0 || slot >= player.inventory.items.size()) {
+            if (slot < 0 || slot >= player.getInventory().items.size()) {
                 LOGGER.error("PlayerSlot: Could not insert into the specified slot because the specified slot dose not exist! Slot: " + slot + ", Inventory: " + category + ", Stack: " + stack);
                 return;
             }
-            player.inventory.items.set(slot, stack);
+            player.getInventory().items.set(slot, stack);
         }
         else if (category == EnumInvCategory.OFF_HAND){
-            if (slot < 0 || slot >= player.inventory.offhand.size()) {
+            if (slot < 0 || slot >= player.getInventory().offhand.size()) {
                 LOGGER.error("PlayerSlot: Could not insert into the specified slot because the specified slot dose not exist! Slot: " + slot + ", Inventory: " + category + ", Stack: " + stack);
                 return;
             }
-            player.inventory.offhand.set(slot, stack);
+            player.getInventory().offhand.set(slot, stack);
         }
     }
 
-    public ItemStack getStackInSlot(PlayerEntity player) {
+    public ItemStack getStackInSlot(Player player) {
         if (category == EnumInvCategory.ARMOR){
-            return player.inventory.armor.get(slot);
+            return player.getInventory().armor.get(slot);
         }
         else if (category == EnumInvCategory.MAIN){
-            return player.inventory.items.get(slot);
+            return player.getInventory().items.get(slot);
         }
         else if (category == EnumInvCategory.OFF_HAND){
-            return player.inventory.offhand.get(slot);
+            return player.getInventory().offhand.get(slot);
         }
         else {
             LOGGER.error("PlayerSlot#getStackInSlot Invalid or null category! This should not be possible! {}}...", category);

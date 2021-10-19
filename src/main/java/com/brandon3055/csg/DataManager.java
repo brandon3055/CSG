@@ -8,21 +8,19 @@ import com.google.gson.JsonParser;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonWriter;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.JsonToNBT;
-import net.minecraft.util.Util;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.Style;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -37,8 +35,8 @@ public class DataManager {
     private static Logger LOGGER = LogManager.getLogger();
 
     private static Path configFile;
-    public static Map<PlayerSlot, CompoundNBT> spawnInventory = null;
-    public static Map<String, Map<PlayerSlot, CompoundNBT>> kits = new LinkedHashMap<>();
+    public static Map<PlayerSlot, CompoundTag> spawnInventory = null;
+    public static Map<String, Map<PlayerSlot, CompoundTag>> kits = new LinkedHashMap<>();
     public static List<String> wipeBlacklist = new ArrayList<>();
 
     //region Init,Save,Load
@@ -119,7 +117,7 @@ public class DataManager {
             JsonObject inv = obj.get("inventory").getAsJsonObject();
             for (Map.Entry<String, JsonElement> entry : inv.entrySet()) {
                 PlayerSlot slot = PlayerSlot.fromString(entry.getKey());
-                CompoundNBT stack = JsonToNBT.parseTag(entry.getValue().getAsJsonPrimitive().getAsString());
+                CompoundTag stack = TagParser.parseTag(entry.getValue().getAsJsonPrimitive().getAsString());
                 spawnInventory.put(slot, stack);
             }
             LOGGER.info("Loaded " + spawnInventory.size() + " starting items.");
@@ -131,10 +129,10 @@ public class DataManager {
             for (Map.Entry<String, JsonElement> entry : kits.entrySet()) {
                 String name = entry.getKey();
                 JsonObject items = entry.getValue().getAsJsonObject();
-                Map<PlayerSlot, CompoundNBT> kitMap = DataManager.kits.computeIfAbsent(name, s -> new HashMap<>());
+                Map<PlayerSlot, CompoundTag> kitMap = DataManager.kits.computeIfAbsent(name, s -> new HashMap<>());
                 for (Map.Entry<String, JsonElement> kitEntry : items.entrySet()) {
                     PlayerSlot slot = PlayerSlot.fromString(kitEntry.getKey());
-                    CompoundNBT stack = JsonToNBT.parseTag(kitEntry.getValue().getAsJsonPrimitive().getAsString());
+                    CompoundTag stack = TagParser.parseTag(kitEntry.getValue().getAsJsonPrimitive().getAsString());
                     kitMap.put(slot, stack);
                 }
                 LOGGER.info("Loaded " + kitMap.size() + " items for kit " + name);
@@ -149,21 +147,21 @@ public class DataManager {
 
     //endregion
 
-    public static void givePlayerStartGear(PlayerEntity player) {
+    public static void givePlayerStartGear(Player player) {
         if (spawnInventory == null) {
-            player.sendMessage(new StringTextComponent("Custom Starting Gear has not been configured!").withStyle(TextFormatting.DARK_RED), Util.NIL_UUID);
-            player.sendMessage(new StringTextComponent("If you are an operator use /csg_config to get more info."), Util.NIL_UUID);
+            player.sendMessage(new TextComponent("Custom Starting Gear has not been configured!").withStyle(ChatFormatting.DARK_RED), Util.NIL_UUID);
+            player.sendMessage(new TextComponent("If you are an operator use /csg_config to get more info."), Util.NIL_UUID);
             return;
         }
 
         if (wipeBlacklist.isEmpty()) {
-            player.inventory.clearContent();
+            player.getInventory().clearContent();
         }
         else {
-            for (int i = 0; i < player.inventory.getContainerSize(); i++) {
-                ItemStack stack = player.inventory.getItem(i);
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                ItemStack stack = player.getInventory().getItem(i);
                 if (!stack.isEmpty() && !wipeBlacklist.contains(stack.getItem().getRegistryName().getNamespace()) && !wipeBlacklist.contains(stack.getItem().getRegistryName().toString())) {
-                    player.inventory.setItem(i, ItemStack.EMPTY);
+                    player.getInventory().setItem(i, ItemStack.EMPTY);
                 }
             }
         }
@@ -184,14 +182,14 @@ public class DataManager {
         }
     }
 
-    public static void givePlayerKit(PlayerEntity player, String kit) {
+    public static void givePlayerKit(Player player, String kit) {
         if (!kits.containsKey(kit)) {
-            player.sendMessage(new StringTextComponent("The requested kit \"" + kit + "\" does not exist!").withStyle(TextFormatting.DARK_RED), Util.NIL_UUID);
+            player.sendMessage(new TextComponent("The requested kit \"" + kit + "\" does not exist!").withStyle(ChatFormatting.DARK_RED), Util.NIL_UUID);
             return;
         }
 
-        Map<PlayerSlot, CompoundNBT> kitItems = kits.get(kit);
-        player.inventory.clearContent();
+        Map<PlayerSlot, CompoundTag> kitItems = kits.get(kit);
+        player.getInventory().clearContent();
 
         for (PlayerSlot slot : kitItems.keySet()) {
             ItemStack stack = ItemStack.of(kitItems.get(slot).copy());

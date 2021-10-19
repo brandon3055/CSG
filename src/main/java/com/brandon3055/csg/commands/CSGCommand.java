@@ -6,22 +6,19 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.Commands;
-import net.minecraft.command.ISuggestionProvider;
-import net.minecraft.command.arguments.EntityArgument;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.Util;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.Style;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandRuntimeException;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
+import net.minecraftforge.forgespi.language.IModInfo;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.ForgeRegistry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,7 +36,7 @@ import static com.brandon3055.csg.lib.PlayerSlot.EnumInvCategory.*;
 public class CSGCommand {
     private static Logger LOGGER = LogManager.getLogger();
 
-    public static void register(CommandDispatcher<CommandSource> dispatcher) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("csg_config")
                         .requires(cs -> cs.hasPermission(2))
@@ -56,8 +53,8 @@ public class CSGCommand {
                                         .suggests((context, builder) -> {
                                             List<String> suggestions = new ArrayList<>();
                                             suggestions.addAll(ForgeRegistries.ITEMS.getKeys().stream().map(ResourceLocation::toString).collect(Collectors.toList()));
-                                            suggestions.addAll(ModList.get().getMods().stream().map(ModInfo::getModId).collect(Collectors.toList()));
-                                            return ISuggestionProvider.suggest(suggestions, builder);
+                                            suggestions.addAll(ModList.get().getMods().stream().map(IModInfo::getModId).collect(Collectors.toList()));
+                                            return SharedSuggestionProvider.suggest(suggestions, builder);
                                         })
                                         .executes(context -> blackList(context, StringArgumentType.getString(context, "target")))
                                 )
@@ -65,26 +62,26 @@ public class CSGCommand {
         );
     }
 
-    private static int set(CommandContext<CommandSource> ctx) throws CommandSyntaxException {
+    private static int set(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         DataManager.spawnInventory = new HashMap<>();
-        PlayerEntity player = ctx.getSource().getPlayerOrException();
+        Player player = ctx.getSource().getPlayerOrException();
 
-        for (int i = 0; i < player.inventory.items.size(); i++) {
-            ItemStack stack = player.inventory.items.get(i);
+        for (int i = 0; i < player.getInventory().items.size(); i++) {
+            ItemStack stack = player.getInventory().items.get(i);
             if (!stack.isEmpty()) {
                 DataManager.spawnInventory.put(new PlayerSlot(i, MAIN), stack.serializeNBT());
             }
         }
 
-        for (int i = 0; i < player.inventory.armor.size(); i++) {
-            ItemStack stack = player.inventory.armor.get(i);
+        for (int i = 0; i < player.getInventory().armor.size(); i++) {
+            ItemStack stack = player.getInventory().armor.get(i);
             if (!stack.isEmpty()) {
                 DataManager.spawnInventory.put(new PlayerSlot(i, ARMOR), stack.serializeNBT());
             }
         }
 
-        for (int i = 0; i < player.inventory.offhand.size(); i++) {
-            ItemStack stack = player.inventory.offhand.get(i);
+        for (int i = 0; i < player.getInventory().offhand.size(); i++) {
+            ItemStack stack = player.getInventory().offhand.get(i);
             if (!stack.isEmpty()) {
                 DataManager.spawnInventory.put(new PlayerSlot(i, OFF_HAND), stack.serializeNBT());
             }
@@ -95,52 +92,52 @@ public class CSGCommand {
         catch (IOException e) {
             LOGGER.error("Something when wrong while saving inventory!");
             e.printStackTrace();
-            throw new CommandException(new StringTextComponent(e.getMessage() + " [See console for stacktrace]"));
+            throw new CommandRuntimeException(new TextComponent(e.getMessage() + " [See console for stacktrace]"));
         }
-        ctx.getSource().sendSuccess(new StringTextComponent("Your current inventory has been saved and will be given to players when they login for the first time!").withStyle(TextFormatting.GREEN), true);
+        ctx.getSource().sendSuccess(new TextComponent("Your current inventory has been saved and will be given to players when they login for the first time!").withStyle(ChatFormatting.GREEN), true);
 
         return 0;
     }
 
-    private static int give(CommandContext<CommandSource> ctx, PlayerEntity player) {
+    private static int give(CommandContext<CommandSourceStack> ctx, Player player) {
         DataManager.givePlayerStartGear(player);
         return 0;
     }
 
-    private static int blackList(CommandContext<CommandSource> ctx, String target) {
+    private static int blackList(CommandContext<CommandSourceStack> ctx, String target) {
         boolean isMod = !target.contains(":");
         if (DataManager.wipeBlacklist.contains(target)) {
             DataManager.wipeBlacklist.remove(target);
-            ctx.getSource().sendSuccess(new StringTextComponent("Removed " + (isMod ? "Mod" : "Item") + " " + target + " from wipe black list."), true);
+            ctx.getSource().sendSuccess(new TextComponent("Removed " + (isMod ? "Mod" : "Item") + " " + target + " from wipe black list."), true);
             try {
                 DataManager.saveConfig();
             }
             catch (IOException e) {
                 e.printStackTrace();
-                throw new CommandException(new StringTextComponent(e.getMessage()));
+                throw new CommandRuntimeException(new TextComponent(e.getMessage()));
             }
             return 0;
         }
 
         if (isMod) {
             if (!ModList.get().isLoaded(target)) {
-                ctx.getSource().sendFailure(new StringTextComponent("Could not find mod with id " + target));
+                ctx.getSource().sendFailure(new TextComponent("Could not find mod with id " + target));
                 return 1;
             }
         }
         else if (!ForgeRegistries.ITEMS.containsKey(new ResourceLocation(target))){
-            ctx.getSource().sendFailure(new StringTextComponent("Could not find item with id " + target));
+            ctx.getSource().sendFailure(new TextComponent("Could not find item with id " + target));
             return 1;
         }
 
         DataManager.wipeBlacklist.add(target);
-        ctx.getSource().sendSuccess(new StringTextComponent("Added " + (isMod ? "Mod" : "Item") + " " + target + " to wipe black list."), true);
+        ctx.getSource().sendSuccess(new TextComponent("Added " + (isMod ? "Mod" : "Item") + " " + target + " to wipe black list."), true);
         try {
             DataManager.saveConfig();
         }
         catch (IOException e) {
             e.printStackTrace();
-            throw new CommandException(new StringTextComponent(e.getMessage()));
+            throw new CommandRuntimeException(new TextComponent(e.getMessage()));
         }
         return 0;
     }
