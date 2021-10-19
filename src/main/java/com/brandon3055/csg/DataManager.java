@@ -169,7 +169,7 @@ public class DataManager {
         }
 
         for (PlayerSlot slot : spawnInventory.keySet()) {
-            ItemStack stack = ItemStack.of(spawnInventory.get(slot));
+            ItemStack stack = ItemStack.of(spawnInventory.get(slot).copy());
             if (slot.getStackInSlot(player).isEmpty()){
                 slot.setStackInSlot(player, stack);
             }else {
@@ -194,7 +194,7 @@ public class DataManager {
         player.inventory.clearContent();
 
         for (PlayerSlot slot : kitItems.keySet()) {
-            ItemStack stack = ItemStack.of(kitItems.get(slot));
+            ItemStack stack = ItemStack.of(kitItems.get(slot).copy());
             slot.setStackInSlot(player, stack);
         }
     }
