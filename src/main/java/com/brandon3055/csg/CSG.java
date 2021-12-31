@@ -17,7 +17,8 @@ public class CSG {
 
     public static final String MODID = "customstartinggear";
     public static final String MODNAME = "Custom Starting Gear";
-    public static final String VERSION = "${mod_version}";
+//    public static final String VERSION = "${mod_version}";
+    public static final String VERSION = "2.0.3";
 
     public CSG() {
         MinecraftForge.EVENT_BUS.addListener(CSG::registerCommands);
