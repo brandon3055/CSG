@@ -12,7 +12,7 @@ license="MIT License"
 [[dependencies.customstartinggear]]
     modId="forge"
     mandatory=true
-    versionRange="${neo_version_range}"
+    versionRange="${forge_version_range}"
     ordering="NONE"
     side="BOTH"
 [[dependencies.customstartinggear]]
