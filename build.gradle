@@ -1,11 +1,11 @@
 buildscript {
     repositories {
-        // These repositories are only for Gradle plugins, put any other repositories in the repository block further below
-        maven { url = 'https://maven.minecraftforge.net' }
+        mavenLocal()
         mavenCentral()
+        maven { url "https://maven.minecraftforge.net/" }
     }
     dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
+        classpath 'net.minecraftforge.gradle:ForgeGradle:5.1.+'
     }
 }
 
