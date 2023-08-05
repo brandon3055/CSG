@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.brandon3055.csg.lib.PlayerSlot.EnumInvCategory.*;
 
@@ -88,13 +87,12 @@ public class CSGCommand {
         }
         try {
             DataManager.saveConfig();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             LOGGER.error("Something when wrong while saving inventory!");
             e.printStackTrace();
             throw new CommandRuntimeException(Component.literal(e.getMessage() + " [See console for stacktrace]"));
         }
-        ctx.getSource().sendSuccess(Component.literal("Your current inventory has been saved and will be given to players when they login for the first time!").withStyle(ChatFormatting.GREEN), true);
+        ctx.getSource().sendSuccess(() -> Component.literal("Your current inventory has been saved and will be given to players when they login for the first time!").withStyle(ChatFormatting.GREEN), true);
 
         return 0;
     }
@@ -108,11 +106,10 @@ public class CSGCommand {
         boolean isMod = !target.contains(":");
         if (DataManager.wipeBlacklist.contains(target)) {
             DataManager.wipeBlacklist.remove(target);
-            ctx.getSource().sendSuccess(Component.literal("Removed " + (isMod ? "Mod" : "Item") + " " + target + " from wipe black list."), true);
+            ctx.getSource().sendSuccess(() -> Component.literal("Removed " + (isMod ? "Mod" : "Item") + " " + target + " from wipe black list."), true);
             try {
                 DataManager.saveConfig();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
                 throw new CommandRuntimeException(Component.literal(e.getMessage()));
             }
@@ -124,18 +121,16 @@ public class CSGCommand {
                 ctx.getSource().sendFailure(Component.literal("Could not find mod with id " + target));
                 return 1;
             }
-        }
-        else if (!ForgeRegistries.ITEMS.containsKey(new ResourceLocation(target))){
+        } else if (!ForgeRegistries.ITEMS.containsKey(new ResourceLocation(target))) {
             ctx.getSource().sendFailure(Component.literal("Could not find item with id " + target));
             return 1;
         }
 
         DataManager.wipeBlacklist.add(target);
-        ctx.getSource().sendSuccess(Component.literal("Added " + (isMod ? "Mod" : "Item") + " " + target + " to wipe black list."), true);
+        ctx.getSource().sendSuccess(() -> Component.literal("Added " + (isMod ? "Mod" : "Item") + " " + target + " to wipe black list."), true);
         try {
             DataManager.saveConfig();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
             throw new CommandRuntimeException(Component.literal(e.getMessage()));
         }

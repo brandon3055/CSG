@@ -173,12 +173,12 @@ public class DataManager {
             if (slot.getStackInSlot(player).isEmpty()){
                 slot.setStackInSlot(player, stack);
             }else {
-                ItemEntity entity = EntityType.ITEM.create(player.level);
-                if (entity != null && !player.level.isClientSide) {
+                ItemEntity entity = EntityType.ITEM.create(player.level());
+                if (entity != null && !player.level().isClientSide) {
                     entity.setItem(stack);
                     entity.setNoPickUpDelay();
                     entity.setPos(player.getX(), player.getY(), player.getZ());
-                    player.level.addFreshEntity(entity);
+                    player.level().addFreshEntity(entity);
                 }
             }
         }

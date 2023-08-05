@@ -96,7 +96,7 @@ public class KitsCommand {
             e.printStackTrace();
             throw new CommandRuntimeException(Component.literal(e.getMessage() + " [See console for stacktrace]"));
         }
-        ctx.getSource().sendSuccess(Component.literal("Your current inventory has been saved to kit " + name).withStyle(ChatFormatting.GREEN), false);
+        ctx.getSource().sendSuccess(()-> Component.literal("Your current inventory has been saved to kit " + name).withStyle(ChatFormatting.GREEN), false);
 
         return 0;
     }
@@ -124,7 +124,7 @@ public class KitsCommand {
             e.printStackTrace();
             throw new CommandRuntimeException(Component.literal(e.getMessage() + " [See console for stacktrace]"));
         }
-        ctx.getSource().sendSuccess(Component.literal("Kit removed successfully!").withStyle(ChatFormatting.GREEN), false);
+        ctx.getSource().sendSuccess(()-> Component.literal("Kit removed successfully!").withStyle(ChatFormatting.GREEN), false);
         return 0;
     }
 

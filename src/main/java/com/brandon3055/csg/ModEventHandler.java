@@ -14,7 +14,7 @@ public class ModEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void playerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity().level.isClientSide) {
+        if (event.getEntity().level().isClientSide) {
             return;
         }
 
