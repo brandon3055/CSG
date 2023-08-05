@@ -7,14 +7,13 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
 import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -95,16 +94,16 @@ public class KitsCommand {
         catch (IOException e) {
             LOGGER.error("Something when wrong while saving inventory!");
             e.printStackTrace();
-            throw new CommandRuntimeException(new TextComponent(e.getMessage() + " [See console for stacktrace]"));
+            throw new CommandRuntimeException(Component.literal(e.getMessage() + " [See console for stacktrace]"));
         }
-        ctx.getSource().sendSuccess(new TextComponent("Your current inventory has been saved to kit " + name).withStyle(ChatFormatting.GREEN), false);
+        ctx.getSource().sendSuccess(Component.literal("Your current inventory has been saved to kit " + name).withStyle(ChatFormatting.GREEN), false);
 
         return 0;
     }
 
     private static int give(CommandContext<CommandSourceStack> ctx, String name, ServerPlayer player) {
         if (!DataManager.kits.containsKey(name)) {
-            throw new CommandRuntimeException(new TextComponent("The specified kit does not exist!"));
+            throw new CommandRuntimeException(Component.literal("The specified kit does not exist!"));
         }
 
         DataManager.givePlayerKit(player, name);
@@ -113,7 +112,7 @@ public class KitsCommand {
 
     private static int remove(CommandContext<CommandSourceStack> ctx, String name) {
         if (!DataManager.kits.containsKey(name)) {
-            throw new CommandRuntimeException(new TextComponent("The specified kit does not exist!"));
+            throw new CommandRuntimeException(Component.literal("The specified kit does not exist!"));
         }
 
         DataManager.kits.remove(name);
@@ -123,17 +122,17 @@ public class KitsCommand {
         catch (IOException e) {
             LOGGER.error("Something when wrong while saving inventory!");
             e.printStackTrace();
-            throw new CommandRuntimeException(new TextComponent(e.getMessage() + " [See console for stacktrace]"));
+            throw new CommandRuntimeException(Component.literal(e.getMessage() + " [See console for stacktrace]"));
         }
-        ctx.getSource().sendSuccess(new TextComponent("Kit removed successfully!").withStyle(ChatFormatting.GREEN), false);
+        ctx.getSource().sendSuccess(Component.literal("Kit removed successfully!").withStyle(ChatFormatting.GREEN), false);
         return 0;
     }
 
 
     private static int list(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-        ctx.getSource().getPlayerOrException().sendMessage(new TextComponent("### Kits ###").withStyle(ChatFormatting.GOLD), Util.NIL_UUID);
+        ctx.getSource().getPlayerOrException().sendSystemMessage(Component.literal("### Kits ###").withStyle(ChatFormatting.GOLD));
         for (String name : DataManager.kits.keySet()) {
-            ctx.getSource().getPlayerOrException().sendMessage(new TextComponent(name).withStyle(ChatFormatting.GREEN), Util.NIL_UUID);
+            ctx.getSource().getPlayerOrException().sendSystemMessage(Component.literal(name).withStyle(ChatFormatting.GREEN));
         }
         return 0;
     }

@@ -9,14 +9,15 @@ import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonWriter;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -149,8 +150,8 @@ public class DataManager {
 
     public static void givePlayerStartGear(Player player) {
         if (spawnInventory == null) {
-            player.sendMessage(new TextComponent("Custom Starting Gear has not been configured!").withStyle(ChatFormatting.DARK_RED), Util.NIL_UUID);
-            player.sendMessage(new TextComponent("If you are an operator use /csg_config to get more info."), Util.NIL_UUID);
+            player.sendSystemMessage(Component.literal("Custom Starting Gear has not been configured!").withStyle(ChatFormatting.DARK_RED));
+            player.sendSystemMessage(Component.literal("If you are an operator use /csg_config to get more info."));
             return;
         }
 
@@ -160,7 +161,8 @@ public class DataManager {
         else {
             for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
                 ItemStack stack = player.getInventory().getItem(i);
-                if (!stack.isEmpty() && !wipeBlacklist.contains(stack.getItem().getRegistryName().getNamespace()) && !wipeBlacklist.contains(stack.getItem().getRegistryName().toString())) {
+                ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
+                if (!stack.isEmpty() && key != null && !wipeBlacklist.contains(key.getNamespace()) && !wipeBlacklist.contains(key.toString())) {
                     player.getInventory().setItem(i, ItemStack.EMPTY);
                 }
             }
@@ -184,7 +186,7 @@ public class DataManager {
 
     public static void givePlayerKit(Player player, String kit) {
         if (!kits.containsKey(kit)) {
-            player.sendMessage(new TextComponent("The requested kit \"" + kit + "\" does not exist!").withStyle(ChatFormatting.DARK_RED), Util.NIL_UUID);
+            player.sendSystemMessage(Component.literal("The requested kit \"" + kit + "\" does not exist!").withStyle(ChatFormatting.DARK_RED));
             return;
         }
 

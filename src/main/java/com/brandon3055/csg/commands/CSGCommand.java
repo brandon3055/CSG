@@ -12,7 +12,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -52,8 +52,8 @@ public class CSGCommand {
                                 .then(Commands.argument("target", StringArgumentType.string())
                                         .suggests((context, builder) -> {
                                             List<String> suggestions = new ArrayList<>();
-                                            suggestions.addAll(ForgeRegistries.ITEMS.getKeys().stream().map(ResourceLocation::toString).collect(Collectors.toList()));
-                                            suggestions.addAll(ModList.get().getMods().stream().map(IModInfo::getModId).collect(Collectors.toList()));
+                                            suggestions.addAll(ForgeRegistries.ITEMS.getKeys().stream().map(ResourceLocation::toString).toList());
+                                            suggestions.addAll(ModList.get().getMods().stream().map(IModInfo::getModId).toList());
                                             return SharedSuggestionProvider.suggest(suggestions, builder);
                                         })
                                         .executes(context -> blackList(context, StringArgumentType.getString(context, "target")))
@@ -92,9 +92,9 @@ public class CSGCommand {
         catch (IOException e) {
             LOGGER.error("Something when wrong while saving inventory!");
             e.printStackTrace();
-            throw new CommandRuntimeException(new TextComponent(e.getMessage() + " [See console for stacktrace]"));
+            throw new CommandRuntimeException(Component.literal(e.getMessage() + " [See console for stacktrace]"));
         }
-        ctx.getSource().sendSuccess(new TextComponent("Your current inventory has been saved and will be given to players when they login for the first time!").withStyle(ChatFormatting.GREEN), true);
+        ctx.getSource().sendSuccess(Component.literal("Your current inventory has been saved and will be given to players when they login for the first time!").withStyle(ChatFormatting.GREEN), true);
 
         return 0;
     }
@@ -108,36 +108,36 @@ public class CSGCommand {
         boolean isMod = !target.contains(":");
         if (DataManager.wipeBlacklist.contains(target)) {
             DataManager.wipeBlacklist.remove(target);
-            ctx.getSource().sendSuccess(new TextComponent("Removed " + (isMod ? "Mod" : "Item") + " " + target + " from wipe black list."), true);
+            ctx.getSource().sendSuccess(Component.literal("Removed " + (isMod ? "Mod" : "Item") + " " + target + " from wipe black list."), true);
             try {
                 DataManager.saveConfig();
             }
             catch (IOException e) {
                 e.printStackTrace();
-                throw new CommandRuntimeException(new TextComponent(e.getMessage()));
+                throw new CommandRuntimeException(Component.literal(e.getMessage()));
             }
             return 0;
         }
 
         if (isMod) {
             if (!ModList.get().isLoaded(target)) {
-                ctx.getSource().sendFailure(new TextComponent("Could not find mod with id " + target));
+                ctx.getSource().sendFailure(Component.literal("Could not find mod with id " + target));
                 return 1;
             }
         }
         else if (!ForgeRegistries.ITEMS.containsKey(new ResourceLocation(target))){
-            ctx.getSource().sendFailure(new TextComponent("Could not find item with id " + target));
+            ctx.getSource().sendFailure(Component.literal("Could not find item with id " + target));
             return 1;
         }
 
         DataManager.wipeBlacklist.add(target);
-        ctx.getSource().sendSuccess(new TextComponent("Added " + (isMod ? "Mod" : "Item") + " " + target + " to wipe black list."), true);
+        ctx.getSource().sendSuccess(Component.literal("Added " + (isMod ? "Mod" : "Item") + " " + target + " to wipe black list."), true);
         try {
             DataManager.saveConfig();
         }
         catch (IOException e) {
             e.printStackTrace();
-            throw new CommandRuntimeException(new TextComponent(e.getMessage()));
+            throw new CommandRuntimeException(Component.literal(e.getMessage()));
         }
         return 0;
     }

@@ -14,11 +14,11 @@ public class ModEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void playerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getPlayer().level.isClientSide) {
+        if (event.getEntity().level.isClientSide) {
             return;
         }
 
-        CompoundTag playerData = event.getPlayer().getPersistentData();
+        CompoundTag playerData = event.getEntity().getPersistentData();
         CompoundTag data;
 
         if (!playerData.contains(Player.PERSISTED_NBT_TAG)) {
@@ -29,7 +29,7 @@ public class ModEventHandler {
         }
 
         if (!data.getBoolean("csg:receivedInventory")) {
-            DataManager.givePlayerStartGear(event.getPlayer());
+            DataManager.givePlayerStartGear(event.getEntity());
             data.putBoolean("csg:receivedInventory", true);
             playerData.put(Player.PERSISTED_NBT_TAG, data);
         }
